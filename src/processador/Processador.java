@@ -2,29 +2,15 @@ package processador;
 
 import boleto.Boleto;
 import fatura.Fatura;
+import fatura.StatusFaturaEnum.StatusFatura;
 import pagamento.Pagamento;
-import pagamento.TipoPagamentoEnum;
+import pagamento.TipoPagamentoEnum.TipoPagamento;
 
-import java.util.Date;
 import java.util.List;
 
 public class Processador {
 
-    public List<Boleto> boletoList;
-    public Fatura fatura;
-
-    public Processador(List<Boleto> boletoList, Fatura fatura) {
-        this.fatura = fatura;
-        this.boletoList = boletoList;
-    }
-
-    public Pagamento criaPagamento() {
-        double valorTotalPagemento = getValorTotalPago();
-        Date date = new Date(System.currentTimeMillis());
-        return new Pagamento(valorTotalPagemento, date, TipoPagamentoEnum.TipoPagamento.BOLETO);
-    }
-
-    private double getValorTotalPago() {
+    public static double getValorTotalBoletos(List<Boleto> boletoList) {
         double valorTotal = 0;
         for (Boleto boleto : boletoList) {
             valorTotal = valorTotal + boleto.getValorPago();
@@ -32,9 +18,24 @@ public class Processador {
         return valorTotal;
     }
 
-    public boolean verificaFaturaPaga(){
-        double valorTotalPago = getValorTotalPago();
-        return valorTotalPago >= fatura.getValorTotal();
+    public static void criaPagamentos(List<Boleto> boletoList, Fatura fatura) {
+        for (Boleto boleto : boletoList) {
+            Pagamento pagamento = new Pagamento(boleto.getValorPago(), boleto.getData(), TipoPagamento.BOLETO);
+            fatura.addPagamentoList(pagamento);
+        }
+    }
+
+    private static void setFaturaPaga(Fatura fatura) {
+        fatura.setStatusFatura(StatusFatura.PAGA);
+    }
+
+    public static boolean verificaFaturaPaga(List<Boleto> boletoList, Fatura fatura) {
+        double valorTotalPago = Processador.getValorTotalBoletos(boletoList);
+        if (valorTotalPago >= fatura.getValorTotal()) {
+            Processador.setFaturaPaga(fatura);
+            return true;
+        }
+        return false;
     }
 
 }

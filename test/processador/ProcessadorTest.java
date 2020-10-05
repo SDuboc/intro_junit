@@ -2,9 +2,8 @@ package processador;
 
 import boleto.Boleto;
 import fatura.Fatura;
+import fatura.StatusFaturaEnum.StatusFatura;
 import org.junit.jupiter.api.*;
-import pagamento.Pagamento;
-import pagamento.TipoPagamentoEnum.TipoPagamento;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +17,7 @@ public class ProcessadorTest {
     private static final Date DATE = new Date(System.currentTimeMillis());
     private static final double VALOR_PAGO_FATURA_PAGA = 400;
     private static final double VALOR_PAGO_FATURA_NAO_PAGA = 800;
+    private static final String NOME_CLIENTE = "Jusicreuza";
     private List<Boleto> listBoletos = new ArrayList<>();
 
     @BeforeAll
@@ -28,7 +28,6 @@ public class ProcessadorTest {
     @AfterAll
     public static void printFimDoTest() {
         System.out.println("Fim dos testes da classe ProcessadorTest");
-        System.out.println("------------------------------------------");
     }
 
     @BeforeEach
@@ -44,44 +43,28 @@ public class ProcessadorTest {
     @Test
     public void testVerificaFaturaPaga() {
         Fatura fatura = inicializaFatura(VALOR_PAGO_FATURA_PAGA);
-        Processador processador = inicializaProcessador(listBoletos, fatura);
-        assertTrue(processador.verificaFaturaPaga());
+        assertTrue(Processador.verificaFaturaPaga(listBoletos, fatura));
+        assertEquals(StatusFatura.PAGA, fatura.getStatusFatura());
     }
 
     @DisplayName("Testa a verificação correta de uma Fatura não paga")
     @Test
     public void testVerificaFaturaEmAberto() {
         Fatura fatura = inicializaFatura(VALOR_PAGO_FATURA_NAO_PAGA);
-        Processador processador = inicializaProcessador(listBoletos, fatura);
-        assertFalse(processador.verificaFaturaPaga());
+        assertFalse(Processador.verificaFaturaPaga(listBoletos, fatura));
+        assertEquals(StatusFatura.NAO_PAGA, fatura.getStatusFatura());
     }
 
     @DisplayName("Testa se o processador está criando pagamentos relacionados a fatura")
     @Test
     public void testCriaPagamento() {
         Fatura fatura = inicializaFatura(VALOR_PAGO_FATURA_NAO_PAGA);
-        Processador processador = inicializaProcessador(listBoletos, fatura);
-        Pagamento pagamento = processador.criaPagamento();
-        Assertions.assertAll("processador",
-                () -> assertEquals(getValorTotalBoletos(), pagamento.getValorPago(), 0),
-                () -> assertNotNull(pagamento.getDate()),
-                () -> assertEquals(TipoPagamento.BOLETO, pagamento.getTipoPagamento()));
-    }
-
-    private Processador inicializaProcessador(List<Boleto> listBoletos, Fatura fatura) {
-        return new Processador(listBoletos, fatura);
+        Processador.criaPagamentos(listBoletos, fatura);
+        assertEquals(listBoletos.size(), fatura.getPagamentoList().size());
     }
 
     private Fatura inicializaFatura(double valorPago) {
-        return new Fatura(DATE, valorPago, "Jusicreuza");
-    }
-
-    private double getValorTotalBoletos() {
-        double valorTotal = 0;
-        for (Boleto boleto : listBoletos) {
-            valorTotal = valorTotal + boleto.getValorPago();
-        }
-        return valorTotal;
+        return new Fatura(DATE, valorPago, NOME_CLIENTE, StatusFatura.NAO_PAGA);
     }
 
 }
